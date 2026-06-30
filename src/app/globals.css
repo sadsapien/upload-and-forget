@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg text-text;
+  }
+
+  ::selection {
+    @apply bg-accent text-text;
+  }
+
+  :focus-visible {
+    outline: 2px solid theme('colors.accent');
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface border border-border rounded-lg;
+  }
+
+  .btn-primary {
+    @apply bg-accent text-text px-4 py-2 rounded-md font-medium hover:bg-accentDim transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-surface2 text-text border border-border px-4 py-2 rounded-md font-medium hover:border-accent transition-colors;
+  }
+
+  .field-label {
+    @apply text-xs uppercase tracking-wide text-muted mb-1.5 block;
+  }
+
+  .field-input {
+    @apply w-full bg-surface2 border border-border rounded-md px-3 py-2 text-text placeholder:text-muted focus:border-accent outline-none transition-colors;
+  }
+}

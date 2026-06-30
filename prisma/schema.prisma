@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BeatStatus {
+  DRAFT // uploaded, pipeline not yet triggered
+  PROCESSING // pipeline running
+  READY // live, checkout + posts done (or attempted)
+  FAILED
+}
+
+enum PipelineStage {
+  VIDEO_GENERATION
+  AUDIO_MUX
+  COPYWRITING
+  CHECKOUT_CREATION
+  SOCIAL_POSTING
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum Platform {
+  YOUTUBE
+  INSTAGRAM
+  TIKTOK
+}
+
+enum PostStatus {
+  PENDING
+  POSTED
+  FAILED
+}
+
+model Beat {
+  id     String @id @default(cuid())
+  slug   String @unique
+  title  String
+
+  // Manually entered on upload. No audio analysis — Noah produces every
+  // beat himself and already knows this with zero ambiguity.
+  bpm    Int
+  key    String
+  mood   String
+  tags   String[] @default([])
+
+  priceCents Int
+
+  audioKey String // R2 object key
+  audioUrl String
+
+  // Manual override; no hook-detection. videoUrl below is the FINAL muxed
+  // clip (audio + visual) once the pipeline runs — rawVideoUrl is Runway's
+  // silent output, kept around for debugging/regeneration.
+  clipStartSeconds    Int     @default(15)
+  clipDurationSeconds Int     @default(30)
+  rawVideoUrl         String?
+  videoUrl            String?
+  caption            String?
+  hashtags           String[] @default([])
+  stripeProductId    String?
+  stripePriceId      String?
+  checkoutUrl        String?
+
+  status BeatStatus @default(DRAFT)
+
+  posts        Post[]
+  pipelineJobs PipelineJob[]
+  sales        Sale[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PipelineJob {
+  id     String        @id @default(cuid())
+  beatId String
+  beat   Beat          @relation(fields: [beatId], references: [id], onDelete: Cascade)
+  stage  PipelineStage
+  status JobStatus     @default(PENDING)
+  error  String?
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([beatId])
+}
+
+model Sale {
+  id              String   @id @default(cuid())
+  beatId          String
+  beat            Beat     @relation(fields: [beatId], references: [id], onDelete: Cascade)
+  amountCents     Int
+  currency        String
+  stripeSessionId String   @unique
+  createdAt       DateTime @default(now())
+
+  @@index([beatId])
+}
+
+model Post {
+  id       String     @id @default(cuid())
+  beatId   String
+  beat     Beat       @relation(fields: [beatId], references: [id], onDelete: Cascade)
+  platform Platform
+  status   PostStatus @default(PENDING)
+  url      String?
+  error    String?
+  postedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([beatId])
+}
